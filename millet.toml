@@ -1,0 +1,4 @@
+version = 1
+workspace.root = "sources.mlb"
+[diagnostics]
+4017.severity = "ignore"

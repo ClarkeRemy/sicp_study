@@ -1,0 +1,2771 @@
+#lang sicp
+
+(#%require sicp-pict)
+
+;; https://docs.racket-lang.org/sicp-manual/Installation.html
+(define-syntax λ (syntax-rules () [(_ arg ...) (lambda arg ...)]))
+(define-syntax def (syntax-rules () [(_ arg ...) (define arg ...)]))
+; ((λ (x) x) 20)
+
+
+;; 1.1 The Elements of Programming
+;; 1.1.1 Expressions
+
+; (list 486 (+ 137 349) (- 1000 334) (* 5 99) (/ 10 5) (+ 2.7 10))
+; (list (+ 21 35 12 7) (* 25 4 12))
+; (+ (* 3 5) (- 10 6))
+; (+ (* 3 (+ (* 2 4) (+ 3 5))) (+ (- 10 7) 6))
+
+;; 1.1.2 Naming and the Environment
+
+; (define size 2) (define pi 3.14159) (define radius 10)
+; (* pi (* radius radius))
+; (define circumference (* 2 pi radius)) circumference
+
+;; 1.1.3 Evaluating Combinations
+
+; (* (+ 2 (* 4 6)) (+ 3 5 7))
+
+;; 1.1.4 Compound Procedures
+
+(define (square x) (* x x))
+; (square 21) (square (+ 2 5)) (square (square 3))
+
+(define (sum-of-squares x y) (+ (square x) (square y)))
+; (sum-of-squares 3 4)
+; (define (f a) (sum-of-squares (+ a 1) (* a 2)))
+; (f 5)
+
+;; 1.1.6 Conditional Expressions and Predicates
+; (define (abs x) (cond ((> x 0) x) ((= x 0) 0) ((< x 0) (- x))))
+; (define (abs x) (cond ((< x 0) (- x)) (else x)))
+; (define (abs x) (if (< x 0) (- x) x))
+
+; ((λ (x)   (and (> x 5) (< x 10)))   5)
+; (define (>= x y) (or (> x y) (= x y)))
+; (define (>= x y) (not (< x y)))
+
+; 10        ; 10
+; (+ 5 3 4) ; 12
+; (- 9 1)   ; 8
+; (/ 6 2)   ; 3
+; (+ (* 2 4) (- 4 6)) ; 6
+; (define a 3)        ; 3 but not printed
+; (define b (+ a 1))  ; 4 but not printed
+; (+ a b (* a b))     ; 19
+; (= a b)             ; #f
+; (if (and (> b a) (< b (* a b))) b a)             ; b => 4
+; (cond ((= a 4) 6) ((= b 4) (+ 6 7 a)) (else 25)) ; 16
+; (+ 2 (if (> b a) b a)) ; 6
+; (* (cond ((> a b) a) ((< a b) b) (else -1)) (+ a 1)) ; 16
+
+;; Exercise 1.2
+; (/ (+ 5 4 (- 2 (- 3 (+ 6 (/ 4 5)))))  (* 3 (- 6 2) (- 2 7)))
+
+;; Exercise 1.3
+(def (ex-1.3 a b c)
+  (cond ((< a b c) (sum-of-squares b c))
+        ((< b c)   (sum-of-squares a c))
+        (else      (sum-of-squares a b))))
+; (ex-1.3 3 2 1)
+
+; Exercise 1.4
+; Behavior is selected; if b is positive, a+b else a-b
+
+; Exercise 1.5
+; in applicative order, it will never reach the if, as p will eval to itself before entering test
+; in normal order p isn't needed yet, so it will end at the if
+
+;; 1.1.7 Example: Square Roots by Newtons's Method
+
+; (def (good-enough? g x) "g:guess" (< (abs (- (square g) x)) 0.001))
+(def (good-enough? g x) "g:guess" (< (abs (/ (- (square g) x) g)) 0.001))
+(def (average x y)                (/ (+ x y) 2))
+(def (improve g x)      "g:guess" (average g (/ x g)))
+(def (sqrt-iter g x)    "g:guess" (if (good-enough? g x) g (sqrt-iter (improve g x) x)))
+(def (sqrt x)                     (sqrt-iter 1.0 x))
+
+; (sqrt 9) (sqrt (+ 100 37)) (square (sqrt 1000))
+
+;; Exercise 1.7
+(def (good-enough?-ex-1.7 g x) "g:guess" (< (abs (/ (- (square g) x) g)) 0.001))
+(def (sqrt-iter-ex-1.7 g x)    "g:guess" (if (good-enough?-ex-1.7 g x) g (sqrt-iter-ex-1.7 (improve g x) x)))
+(def (sqrt-ex-1.7 x)                     (sqrt-iter-ex-1.7 1.0 x))
+; (sqrt-ex-1.7 9) (square (sqrt-ex-1.7 (+ 100 37))) (square (sqrt-ex-1.7 1000))
+
+;; Exercise 1.8
+(def (cube x) (* x x x))
+
+(def (good-enough?-ex-1.8 g x) "g:guess" (< (abs (/ (- (cube g) x) g)) 0.001))
+(def (improve-cbrt-ex-1.8 g x) "g:guess" (/ (+ (/ x (square g)) (* 2 g)) 3))
+(def (cbrt-iter-ex-1.8 g x)    "g:guess" (if (good-enough?-ex-1.8 g x) g (cbrt-iter-ex-1.8 (improve-cbrt-ex-1.8 g x) x)))
+(def (cbrt-ex-1.8 x)                     (cbrt-iter-ex-1.8 1.0 x))
+
+; (cbrt-ex-1.8 27) (cbrt-ex-1.8 (+ 100 37)) (cube (cbrt-ex-1.8 1000))
+
+;; 1.2 Procedures and the Process They Generate
+
+;; 1.2.1 Linear Recursion and Iteration
+(def (factorial n) (if (= n 1) 1 (* n (factorial (- n 1)))))
+;; (factorial 6)
+
+(def (factorial-2 n)
+  (def (iter p c) "product counter"
+    (if (> c n) p (iter (* c p) (+ c 1))))
+  (iter 1 1))
+;; (factorial-2 6)
+
+;; Exercise 1.9
+(def (+-ex-1.9a a b) (if (= a 0) b (inc (+-ex-1.9a (dec a) b)))) ; rec
+(def (+-ex-1.9b a b) (if (= a 0) b (+-ex-1.9b (dec a) (inc b)))) ; iter
+; (+-ex-1.9a 5 8)
+; (+-ex-1.9b 5 8)
+
+;; Exercise 1.10
+
+(def (Ack x y)
+  (cond ((= y 0) 0)
+        ((= x 0) (* 2 y))
+        ((= y 1) 2)
+        (else (Ack (- x 1) (Ack x (- y 1))))))
+; (Ack 1 10) (Ack 2 4) (Ack 3 3)
+; (def (f n) (Ack 0 n)) ; 2n
+; (def (g n) (Ack 1 n)) ; 2^n
+; (def (h n) (Ack 2 n)) ; (2^n)^n
+
+;; 1.2.2 Tree Recursion
+(def (fib-1 n)
+  (def (fib n) (cond ((= n 0) 0) ((= n 1) 1) (else (+ (fib (- n 1)) (fib (- n 2))))))
+  (fib n))
+
+(def (fib-2 n)
+  (def (iter a b count) (if (= count 0) b (iter (+ a b) a (- count 1))))
+  (iter 1 0 n))
+
+; (fib-1 4) (fib-2 4)
+
+(def (count-change amount)
+  (def (first-denomination k) "k:kinds-of-coins" (case k (1 1) (2 5) (3 10) (4 25) (5 50)))
+  (def (cc a k) "a:amount k:kinds-of-coins"
+    (cond ((= a 0) 1)
+          ((or (< a 0) (= k 0)) 0)
+          (else (+ (cc a (- k 1)) (cc (- a (first-denomination k)) k)))))
+  (cc amount 5))
+; (count-change 100)
+
+;; Exercise 1.11
+(def (f-ex-1.11a num)
+  (def (f n) (if (< n 3) n (+ (f (- n 1)) (* 2(f (- n 2))) (* 3 (f (- n 3))))))
+  (f num))
+
+(def (f-ex-1.11b num)
+  (def (iter f-3 f-2 f-1 n)
+    (cond ((< n 2) n)
+          ((< n 3) f-1)
+          (else (iter f-2 f-1 (+ f-1 (* 2 f-2) (* 3 f-3)) (dec n)))))
+  (iter 0 1 2 num))
+
+; (f-ex-1.11a 5)
+; (f-ex-1.11b 5)
+
+;; Exercise 1.12
+(def (pascal-ex-1.12 row col)
+  "(row column) 1 based indexing, 0 on out of bounds
+   1
+   1 1
+   1 2 1
+   1 3 3 1
+   1 4 6 4 1
+  "
+  (cond ((or (< row 0) (< col 0) (< row col)) 0)
+        ((or (= col 1) (= row col)) 1)
+        (else (+ (pascal-ex-1.12 (dec row) (dec col)) (pascal-ex-1.12 (dec row) col)))))
+; (pascal-ex-1.12 5 3)
+
+;; Exercise 1.13
+
+
+(def (prove-fib-ex-1.13 n)
+  (def phi (/ (+ 1 (sqrt 5)) 2))
+  (def (p pow acc) (if (= pow n) (/ acc (sqrt 5)) (p (inc pow) (* acc phi))))
+  (> 1 (abs (- (p 0 1) (fib-2 n)))))
+; (prove-fib-ex-1.13 20)
+
+;; 1.2.3 Orders of Growth
+
+;; Exercise 1.15
+(def (ex-1.15)
+  (def (cube x) (* x x x))
+  (def (p x) (- (* 3 x) (* 4 (cube x))))
+  (def (sine angle) (if (not (> (abs angle) 0.1)) angle (p (sine (/ angle 3.0)))))
+  (sine 12.15))
+; (ex-1.15) ;; 12 4 1.33 0.44 0.11 0.04 :: 6 times, log3(n) steps& space
+
+;; 1.2.4 Exponentiation
+(def (expt-1 b n) (if (= n 0) 1 (* b (expt-1 b (dec n)))))
+
+; (def (expt-2 b n)
+;  (def (iter b c p) "b c:counter p:product"
+;    (if (= c 0) p (iter b (dec c) (* b p))))
+;  (iter b n 1))
+
+(def (expt-2 b n)
+  (def (iter c p) "b c:counter p:product"
+    (if (= c 0) p (iter (dec c) (* b p))))
+  (iter n 1))
+; expt-1 2 3)(expt-2 2 3)
+
+
+(def (even? n) (= (remainder n 2) 0))
+
+(def (fast-expt b n)
+  (cond ((= n 0) 1)
+        ((even? n) (square (fast-expt b (/ n 2))))
+        (else (* b (fast-expt b (dec n))))))
+
+;; Exercise 1.16
+
+(def (fast-expt-ex-1.16 b num)
+  (def (iter a b~ n)
+    (cond ((= n 0) a)
+          ((even? n) (iter a (square b~) (/ n 2)))
+          (else (iter (* a b~) b (dec n)))))
+  (iter 1 b num))
+; (fast-expt-ex-1.16 2 3)
+
+;; Exercise 1.17
+(def (double a) (* 2 a))
+(def (halve a) (/ a 2))
+; (def (*-given a b) (if (= b 0) 0 (+ a (*-given a (- b 1)))))
+
+(def (*-ex-1.17 a b)
+  (def (* a b)
+    (cond ((or (= a 0) (= b 0)) 0)
+          ((= b 1) a)
+          ((even? b) (* (double a) (halve b)))
+          (else (+ a (* a (dec b))))))
+  (* a b))
+; (*-ex-1.17 4 5)
+
+;; Exercise 1.18
+
+(def (*-ex-1.18 a b)
+  (def (* a b)
+    (def (iter acc a b)
+      (cond ((= b 0) acc)
+            ((even? b) (iter acc (double a) (halve b)))
+            (else (iter (+ acc a) a (dec b)))))
+    (iter 0 a b))
+  (* a b))
+; (*-ex-1.18 2 4)
+
+
+;; Exercise 1.19
+; a = a + b
+; b = a
+
+; a^ = (a + b) + a = 2a + b 
+; b^ = (a + b)     = a + b
+
+; a^^ = 3a + 2b
+; b^^ = 2a + b
+
+; a^ = (+ (* a p) (* (+ a b) q))
+; b^ = (+ (* b p) (* a q))
+
+; a^^ = (+ (* (+ (* a p)
+;                (* (+ b a) q)
+;                   p)
+;          (* (+ (* b p)  (* a q)) q)
+;          (* (+ (* a p)
+;                (* (+ b a) q)
+;                   q))
+; b^^ = (+ (* (+ (* b p) (* a q)) p) (* (+ ap (* (+ a b) q)) q))
+
+; a^^ = (+ (* a (+ (* p p)
+;                  (* 2 p q)
+;                  (* 2 q q))) ; (+ p^ q^) = (+ (* p p) (* q q) (* 2 p q) (* q q)) = (+ (* p p) (* 2 p q) (* 2 q q))
+;          (* b (+ (*2 p q)
+;                  (* q q)))
+; b^^ = (+ (* b (+ (* p p)
+;                  (* q q)))  ; p^ = (+ (* p p) (* q q))
+;          (* a (+ (* 2 p q)
+;                  (* q q)))) ; q^ = (+ (* 2 p q) (* q q))
+(def (fib-3 n)
+  (def (iter a b p q count)
+    (cond ((= count 0) b)
+          ((even? count) (iter
+                          a
+                          b
+                          (+ (* p p) (* q q)) ;; could use (sum-of-squares p q)
+                          (+ (* 2 p q) (* q q))
+                          (halve count)))
+          (else (iter (+ (* b q) (* a q) (* a p))
+                      (+ (* b p) (* a q))
+                      p
+                      q
+                      (dec count)))))
+  (iter 1 0 0 1 n))
+; (fib-3 2)
+
+;; 1.2.5 Greatest Common Divisors
+
+(def (gcd a b) (if (= b 0) a (gcd b (remainder a b))))
+; (gcd 206 40)
+
+;; Exercise 1.20
+; 18
+
+;; 1.2.6 Example Testing for Primality
+
+; Searching for divisors
+
+(def (divides? a b) (= (remainder b a) 0))
+(def (find-divisor n t) "t:test-divisor"
+  (cond ((> (square t) n) n)
+        ((divides? t n) t)
+        (else (find-divisor n (inc t)))))
+(def (smallest-divisor n) (find-divisor n 2))
+(def (prime? n) (if (= n 1) false (= n (smallest-divisor n))))
+
+; (map prime? (list 1 2 3 4 5 6 7 8 9))
+
+;; The Fermat Test
+
+(def (expmod base exp m)
+  (cond ((= exp 0) 1)
+        ((even? exp) (remainder (square (expmod base (/ exp 2) m)) m))
+        (else        (remainder (*  base (expmod base (dec exp) m)) m))))
+
+; (expmod 10 10 7)
+
+(def (fermat-test n)
+  (def (try-it a)
+    (= (expmod a n n) a))
+  (try-it (inc (random (- n 1)))))
+
+; (map fermat-test (list 2 3 4 5 6 7 8 9))
+
+(def (fast-prime? n times)
+  (cond ((= times 0) true)
+        ((fermat-test n) (fast-prime? n (dec times)))
+        (else false)))
+; (map (λ (x) (fast-prime? x 20)) (list 2 3 4 5 6 7 8 9))
+
+;; Exercise 1.21
+; (map smallest-divisor (list 199 1999 19999))
+
+; Exercise 1.22
+
+(def (report-prime elapsed-time)
+  (display " *** ")
+  (display elapsed-time))
+
+(def (start-prime-test n start-time)
+  (if (prime? n)
+      (report-prime (- (runtime) start-time))))
+
+(def (timed-prime-test n)
+  (newline)
+  (display n)
+  (start-prime-test n (runtime)))
+
+(def (search-for-primes from till)
+  (def (done) (newline) (display "DONE") (newline))
+  (def (iter curr)
+    (def next (+ curr 2))
+    (timed-prime-test curr)
+    (if (> next till) (done) (iter next)))
+  (def (begin-with-2) (timed-prime-test 2) (iter 3) (newline))
+  (cond ((>= from till) (done))
+        ((and (<= from 2) (>= till 2)) (begin-with-2))
+        (else (iter (if (even? from) (inc from) from)))))
+
+; (search-for-primes 1000 1020)
+; (search-for-primes 10000 10037)
+; (search-for-primes 1000000 1000037)
+
+;; skip exercises 1.23 1.24 1.25 1.26 1.27 1.28
+
+;; 1.3 Formulation Abstractractions with Higher-Order Procedures
+
+;; 1.3.1 Procedures as Arguments
+
+(def (sum-integers a b)
+  (if (> a b) 0 (+ a (sum-integers (+ a 1) b))))
+
+(def (sum-cubes a b)
+  (if (> a b) 0 (+ (cube a) (sum-cubes (+ a 1) b))))
+
+(def (pi-sum a b) (if (> a b) 0 (+ (/ 1.0 (* a (+ a 2))) (pi-sum (+ a 4) b))))
+
+;(def (sum term a next b)
+;  (if (> a b)
+;      0
+;      (+ (term a)
+;         (sum term (next a) next b))))
+
+(def (sum term a next b)
+  (def (iter a acc)
+    (if (> a b)
+      acc
+      (iter  (next a) (+ acc (term a)) )))
+  (iter 0 a))
+
+; (def (inc n) (+ n 1))
+(def (sum-cubes-2 a b) (sum cube a inc b))
+; (sum-cubes 1 10)
+
+(def (identity x) x)
+(def (sum-integers-2 a b) (sum identity a inc b))
+
+; (sum-integers-2 1 10)
+
+(def (pi-sum-2 a b)
+  (def (pi-term x) (/ 1.0 (* x (+ x 2))))
+  (def (pi-next x) (+ x 4))
+  (sum pi-term a pi-next b))
+
+; (* 8 (pi-sum 1 1000))
+
+(def (integral f a b dx)
+  (def (add-dx x) (+ x dx))
+  (* (sum f (+ a (/ dx 2.0)) add-dx b) dx))
+
+; (integral cube 0 1 0.01)
+; (integral cube 0 1 0.001)
+
+;; Exercise 1.29
+
+(def (simpson f a b n)
+  (def h (/ (- b a) n))
+  (def (yk k) (f (+ a (* k h))))
+  (def (oddTerm k)  (* 4 (yk k)))
+  (def (evenTerm k) (* 2 (yk k)))
+  (def (inc2 x) (+ x 2))
+  (* (/ h 3)
+     (+ (yk 0)
+        (yk n)
+        (sum oddTerm  1 inc2 (dec n))
+        (sum evenTerm 2 inc2 (dec n)))))
+
+; (simpson cube 0.0 1.0 100)
+; (simpson cube 0.0 1.0 1000)
+
+;; Exercise 1.30
+;; written above
+
+;; Exercise 1.31
+
+#|
+(def (product-rec term a next b)
+  (if (> a b) 1
+      (* (term a) (product term (next a) b))))
+
+(def (product term a next b)
+  (def (iter acc a) (if (> a b) acc (iter (* (term a) acc) (next a))))
+  (iter 1 a))
+
+(def (factorial-3 n)
+  (product identity 1 inc n))
+; (factorial 6)
+
+(def (tau/4 n)
+  (def (term k) (if (even? k) (/ k (inc k)) (/ (inc k) k)))
+  (product term 1.0 inc n))
+
+|#
+
+; (* (tau/4 1000) 4)
+; (def pi (* 2 (tau/4 1000000)))
+; pi
+
+;; Exercise 1.32
+
+(def (accumulate-rec combiner null-value term a next b)
+  (if (> a b) null-value
+      (combiner (term a) (accumulate-iter combiner null-value term (next a) next b))))
+
+(def (accumulate-iter combiner null-value term a next b) ; accummulate-r
+  (def (iter acc a)
+    (if (> a b) acc
+        (iter (combiner acc (term a)) (next a))))
+  (iter null-value a))
+
+; sum
+(def (sum-3 term a next b) (accumulate-iter + 0 term a next b))
+
+; (accumulate-iter + 0 identity 1 inc 10)
+; (sum-3 identity 1 inc 10)
+  
+; product
+(def (product-3 term a next b) (accumulate-iter * 1 identity 1 inc 6))
+
+; (accumulate-iter * 1 identity 1 inc 6)
+; (product-3 identity 1 inc 6)
+
+;; Exercise 1.33
+
+; Finding roots of equations by the half-interval method
+
+(def (search f neg-point pos-point)
+  (let ((midpoint (average neg-point pos-point)))
+    (if (close-enough? neg-point pos-point)
+        midpoint
+        (let ((test-value (f midpoint)))
+          (cond ((positive? test-value)
+                 (search f neg-point midpoint))
+                ((negative? test-value)
+                 (search f midpoint pos-point))
+                (else midpoint))))))
+
+(def (close-enough? x y) (< (abs (- x y)) 0.001))
+
+(def (half-interval-method f a b)
+  (let ((a-value (f a))
+        (b-value (f b)))
+    (cond ((and (negative? a-value) (positive? b-value))
+           (search f a b))
+          ((and (negative? b-value) (positive? a-value))
+           (search f b a))
+          (else (error "Values are not of opposite sign" a b)))))
+
+; (half-interval-method sin 2.0 4.0)
+; (half-interval-method (lambda (x) (- (* x x x) (* 2 x) 3)) 1.0 2.0)
+
+; Find fixed point of functions
+
+(def tolerance 0.00001)
+
+(def (fixed-point f first-guess)
+  (def (close-enough? v1 v2)
+    (< (abs (- v1 v2)) tolerance))
+  (def (try guess)
+ ;; (display guess) ;; exercise 1.36
+ ;;   (let ((next (/ (+ guess (f guess)) 2)))  ;; exercise 1.36 dampening added
+    (let ((next (f guess)))
+      (if (close-enough? guess next)
+          next
+          (try next))))
+  (try first-guess))
+
+
+; (fixed-point cos 1.0)
+; (fixed-point (λ (y) (+ (sin y) (cos y))) 1.0)
+
+(def (sqrt-fixed-point x)
+  (fixed-point (λ (y) (average y (/ x y)))
+               1.0))
+
+;; Exercise 1.35
+
+; (fixed-point (λ (x) (+ 1.0 (/ 1.0 x))) 1.0)
+
+;; Exercise 1.36
+
+; (fixed-point (λ (x) (/ (log 1000.0) (log x))) 1.1)
+
+;; Exercise 1.37
+
+(def (cont-frac-rec n d k)
+  (def (rec i)
+    (if (> i k) 0.0
+        (/ (n i) (+ (d i) (rec (inc i))))))
+  (rec 1))
+
+(def (cont-frac n d k)
+  (def (loop acc i)
+    (if (= i 0) acc
+        (loop (/ (n i)
+                 (+ (d i) acc))
+              (dec i))))
+  (loop 0 k))
+
+; (cont-frac-rec (λ (i) 1.0) (λ (i) 1.0) 11) ;; 11
+; (cont-frac (λ (i) 1.0) (λ (i) 1.0) 11)
+
+;; Exercise 1.38
+
+; (cont-frac (λ (x) 1.0)
+;           (λ (x) (if (= 2 (remainder x 3))   (* 2 (/ (inc x) 3))   1))
+;           11)
+
+;; Exercise 1.39
+
+(def (tan-cf x k)
+  (def -x2 (- (* x x))) 
+  (/ (cont-frac (λ (a) -x2)
+                (λ (a) (dec (* 2 a)))
+                11)
+     (- x)))
+
+; (tan-cf (/ 3.1415 4) 11)
+
+
+
+;; 1.3.4 Procedures as Returned Values
+
+(def (average-damp f) (λ (x) (average x (f x))))
+
+; ((average-damp square) 10)
+
+(def (sqrt-fixed-point-2 x) (fixed-point (average-damp (λ (y) (/ x y))) 1.0))
+; (sqrt-fixed-point-2 25)
+
+(def (cube-root x)
+  (fixed-point (average-damp (λ (y) (/ x (square y))))
+               1.0))
+
+;; Newton's method
+
+#|
+
+(def (deriv g)
+  (def dx 0.0001)
+  (λ (x) (/ (- (g (+ x dx)) (g x))
+            dx)))
+
+(def (cube-2 x) (* x x x))
+; ((deriv cube-2) 5)
+
+(def (newton-transform g)
+  (λ (x)
+    (- x (/ (g x) ((deriv g) x)))))
+
+
+(def (newtons-method g guess)
+  (fixed-point
+   (newton-transform g) guess))
+
+(def (sqrt-newton x)
+  (newtons-method (λ (y) (- (square y) x))
+                  1.0))
+
+|#
+
+;; Exercise 1.40
+(def (cubic a b c)
+  (λ (x) (+ (cube x)
+            (* a (square x))
+            (+ b x)
+            c)))
+
+; (newtons-method (cubic 1 2 3) 1)
+
+;; Exercise 1.41
+(def (twice f) (λ (x) (f (f x))))
+; (((twice (twice twice)) inc) 5)
+
+;; Exercise 1.42
+
+(def (compose a b) (λ (x) (a (b x))))
+; ((compose square inc) 6)
+
+; Exercise 1.43
+
+(def (repeated f times)
+  (def (loop acc c)
+    (if (= 0 c) acc
+        (loop (compose f acc) (dec c))))
+  (loop (λ (x) x) times))
+
+; ((repeated square 2) 5)
+
+;; Exercise 1.44
+(def (smooth f)
+  (def dx 0.00001)
+  (λ (x) (/ (+ (f (- x dx)) (f x) (f (+ x dx)))
+            3)))
+
+(def (n-fold-smooth f n) ((repeated smooth n) f))
+
+;; Exercise 1.45
+
+(def (nth-root nth x)
+  (def (pow n a)
+    (def (loop acc c)
+      (if (= 0 c) acc
+          (loop (* a acc) (dec c))))
+    (loop 1 n))
+  
+  (def nth-1 (dec nth))
+  (fixed-point
+   ((repeated average-damp (floor (log nth 2))) (λ (y) (/ x (pow nth-1 y))))
+   1.0))
+
+; (nth-root 4 16)
+
+;; Exercise 1.46
+
+(def (iterative-improve good-enough improve)
+  (def (loop acc)
+    (if (good-enough acc)
+        acc
+        (loop (improve acc))))
+  loop)
+
+(def (sqrt-iter-improve n)
+  ((iterative-improve (λ (x) (< (abs (- n (square x))) 0.00001))
+                     (average-damp (λ (x) (/ n x))))
+  1.0))
+
+; (sqrt-iter-improve 2)
+
+(def (fixed-point-iter-improve f first-guess)
+  (def tolerance 0.00001)
+  (def (close-enough? v1 v2)
+    (< (abs (- v1 v2)) tolerance))
+
+  ((iterative-improve (λ (x) (close-enough? x (f x)))
+                      f)
+   first-guess))
+
+;; 2 Building Abstractions with Data
+
+; (def (linear-combination a b x y)
+;  (+ (* a x) (* b y)))
+
+; (def (linear-combination a b x y)
+;  (add (mul a x) (mul b y)))
+
+;; 2.1 Introduction to Data Abstraction
+
+
+(def (add-rat x y)
+  (make-rat (+ (* (numer x) (denom y))
+               (* (numer y) (denom x)))
+            (* (denom x) (denom y))))
+
+(def (sub-rat x y)
+  (make-rat (+ (* (numer x) (denom y))
+               (* (numer y) (denom x)))
+            (* (denom x) (denom y))))
+
+(def (mul-rat x y)
+  (make-rat (* (numer x) (numer y))
+            (* (denom x) (denom y))))
+
+(define (div-rat x y)
+  (make-rat (* (numer x) (denom y))
+            (* (denom x) (numer y))))
+
+
+;; Pairs
+
+; (define x (cons 1 2))
+; (car x)
+; (cdr x)
+
+
+; (def x (cons 1 2))
+; (def y (cons 3 4))
+; (def z (cons x y))
+
+; (car (cdr z))
+
+; Representing rational numbers
+
+; (def (make-rat n d) (cons n d))
+(def (make-rat n d)
+  (let ((g (gcd n d)))
+         (cons (/ n g) (/ d g))))
+(def (numer x) (car x))
+(def (denom x) (cdr x))
+
+(def (print-rat x)
+  (newline)
+  (display (numer x))
+  (display "/")
+  (display (denom x)))
+
+(def one-half (make-rat 1 2))
+; (print-rat one-half)
+
+; (def one-third (make-rat 1 3))
+; (print-rat (add-rat one-half one-third))
+; (print-rat (mul-rat one-half one-third))
+; (print-rat (add-rat one-third one-third))
+
+#|
+(def (make-rat n d)
+  (let ((g (gcd n d)))
+         (cons (/ n g) (/ d g))))
+|#
+
+; (print-rat (add-rat one-third one-third))
+
+
+;; 2.1.2 Abstraction Barriers
+
+#|
+(def (make-rat n d) (cons n d))
+(def (numer x)
+  (let ((g (gcd (car x) (cdr x))))
+    (/ (car x) g)))
+(def (denom x)
+  (let ((g (gcd (car x) (cdr x))))
+    (/ (cdr x) g)))
+|#
+
+;; Exercise 2.2
+
+#|
+(def (make-segment start end) (cons start end))
+(def (start-segment seg) (car seg))
+(def (end-segment seg) (cdr seg))
+
+(def (make-point x y) (cons x y))
+(def (x-point p) (car p))
+(def (y-point p) (cdr p))
+
+(def (print-point p)
+  (newline)
+  (display "(")
+  (display (x-point p))
+  (display ",")
+  (display (y-point p))
+  (display ")"))
+
+(def (midpoint-segment seg)
+  ((λ (start end)
+     (make-segment (average (x-point start) (x-point end))
+                   (average (y-point start) (y-point end))))
+   (start-segment seg) (end-segment seg)))
+|#
+
+; (print-point (midpoint-segment (make-segment (make-point 10 20) (make-point 40 50))))
+
+;; Exercise 2.3
+#|
+(def (make-rectangle p1 p2)
+  ((λ (p1x p1y p2x p2y)
+    (cons (make-point (min p1x p2x) (min p1y p2y))
+          (make-point (max p1x p2x) (max p1y p2y))))
+   (x-point p1) (y-point p1) (x-point p2) (y-point p2)))
+
+(def (min-corner-rectangle rect) (car rect))
+(def (max-corner-rectangle rect) (cdr rect))
+
+(def (cons-width-height-rectangle rect)
+  ((λ (minp maxp)
+     (cons (- (x-point maxp) (x-point minp))
+           (- (y-point maxp) (y-point minp))))
+   (min-corner-rectangle rect) (max-corner-rectangle rect)))
+
+(def (perimeter-rectangle rect)
+  ((λ (hw) (* 2 (+ (car hw) (cdr hw))))
+   (cons-width-height-rectangle rect)))
+
+(def (area-rectangle rect)
+  ((λ (hw) (* (car hw) (cdr hw)))
+   (cons-width-height-rectangle rect)))
+|#
+
+; (perimeter-rectangle (make-rectangle (make-point 10 20) (make-point 40 50)))
+; (area-rectangle (make-rectangle (make-point 10 20) (make-point 40 50)))
+
+(def (cons-dispatch x y)
+  (def (dispatch m)
+    (cond ((= m 0) x)
+          ((= m 1) y)
+          (else (error "Argument not 0 or 1 -- CONS" m))))
+  dispatch)
+
+(def (car-dispatch z) (z 0))
+(def (cdr-dispatch z) (z 1))
+
+;; Exercise 2.4
+
+(def (cons-lambda x y)
+  (λ (m) (m x y)))
+
+(def (car-lambda z)
+  (z (λ (p q) p)))
+
+(def (cdr-lambda z)
+  (z (λ (p q) q)))
+
+;; Exercise 2.5
+
+(def (cons-integers x y)
+  (* (expt 2 x) (expt 3 y)))
+
+(def (factor-of f input)
+    (def (loop acc decr)
+      (if (= 0 (remainder decr f))
+          (loop (inc acc) (/ decr f))
+          acc)
+      )
+  (loop 0 input))
+
+(def (car-integers c)
+  (factor-of 2 c))
+
+(def (cdr-integers c)
+  (factor-of 3 c))
+
+; (car-integers (cons-integers 3 8))
+; (cdr-integers (cons-integers 3 8))
+
+;; Exercise 2.6
+
+(def zero (λ (f) (λ (x) x)))
+(def (add-1 n)
+  (λ (f) (λ (x) (f ((n f) x)))))
+
+(def one
+  (λ (f) (λ (x) (f x))))
+
+(def two
+  (λ (f) (λ (x) (f (f x)))))
+
+;; 2.1.4 Extended Exercise: Interval Arithmetic
+
+(def (add-interval x y)
+  (make-interval (+ (lower-bound x) (lower-bound y)
+                   (upper-bound x) (upper-bound y))))
+
+(def (mul-interval x y)
+  ((λ (lbx ubx uby lby)
+    ((λ (p1 p2 p3 p4)
+       (make-interval (min p1 p2 p3 p4)
+                      (max p1 p2 p3 p4)))
+     (* lbx lby) (* lbx uby) (* ubx lby) (* ubx uby)))
+   (lower-bound x) (upper-bound y) (lower-bound x) (upper-bound y)))
+
+(def (div-interval x y)
+  (if (and (<= (lower-bound y) 0)
+           (>= (upper-bound y) 0))
+      (error "division error (interval spans 0)")
+      (mul-interval x (make-interval (/ 1.0 (upper-bound y))
+                                     (/ 1.0 (lower-bound y))))))
+
+;; Exercise 2.7
+
+(def (make-interval a b) (cons a b))
+(def (lower-bound i) (car i))
+(def (upper-bound i) (cdr i))
+
+;; Exercise 2.8
+
+(def (sub-interval a b)
+  (make-interval (- (lower-bound a) (upper-bound b))
+                 (- (upper-bound a) (lower-bound b))))
+
+;; Exercise 2.9
+
+; ...
+
+;; Exercise 2.10
+
+#|
+(def (mul-interval-2 x y)
+  (def (p x) (>= x 0))
+  (def (mi xleft yleft xright yright )
+    (make-interval (* xleft yleft) (* xright yright)))
+  ((λ (lbx ubx uby lby)
+    ((λ (plbx pubx plby puby)
+       (if (plbx)
+           (if (not pubx)
+               (error "lower larger than upper")
+               (if plby
+                   (if puby
+                       (mi lbx lby ubx uby)
+                       (error "lower larger than upper"))
+                   (if puby
+                       (mi ubx lby ubx uby)
+                       (mi ubx lby lbx uby))))
+            (if plby
+                (if (not puby)
+                    (error "lower larger than upper")
+                    (if pubx
+                        (mi xbl uby ubx uby)
+                        (mi lbx uby ubx lby)))
+                (if puby
+                    (if pubx
+                        ((λ (p1 p2 p3 p4)
+                          (make-interval (min p1 p2 p3 p4)
+                                         (max p1 p2 p3 p4)))
+                        (* lbx lby) (* lbx uby) (* ubx lby) (* ubx uby))
+                       (mi ubx lby lbx lby))
+                    (if puby 
+                        (mi lbx uby lbx lby)
+                       (mi ubx uby lbx lby))))))
+     (pos lbx) (pos ubx) (pos lby) (pos uby))
+   (lower-bound x) (upper-bound y) (lower-bound x) (upper-bound y)))
+|#
+
+
+
+(define (make-center-width c w)
+  (make-interval (- c w) (+ c w)))
+
+(define (center i)
+  (/ (+ (lower-bound i) (upper-bound i)) 2))
+
+(define (width i)
+  (/ (- (upper-bound i) (lower-bound i)) 2))
+
+;; Exercise 2.12
+
+(def (make-center-percent c p)
+  (def width (* c (/ p 100)))
+  (make-center-width c width))
+
+;; exercise 2.13
+; punt
+
+
+(def (par1 r1 r2)
+  (div-interval (mul-interval r1 r2)
+                (add-interval r1 r2)))
+
+(def (par2 r1 r2)
+  (let ((one (make-interval 1 1)))
+    (div-interval one
+                  (add-interval (div-interval one r1)
+                                (div-interval one r2)))))
+
+;; 2.14 - 1.15 - 2.16
+; punt
+
+;; Heirarchical Data and the Closure Property
+
+; (cons 1 2)
+
+;; 2.2.1 Representing Sequences
+
+; (cons 1 (cons 2 ( cons 3 ( cons 4 nil))))
+
+; (list 1 2 3 4)
+ (def one-through-four (list 1 2 3 4))
+; one-through-four
+
+#|
+(car one-through-four)
+(cdr one-through-four)
+(car (cdr one-through-four))
+(cons 10 one-through-four)
+(cons 5 one-through-four)
+|#
+
+(def (list-ref items n)
+  (if (= n 0)
+      (car items)
+      (list-ref (cdr items) (- n 1))))
+
+(def squares (list 1 4 9 16 25))
+; (list-ref squares 3)
+
+
+; (def (length items) (if (null? items) 0 (+ 1 (length (cdr items)))))
+(def odds (list 1 3 5 7))
+;(length odds)
+
+
+(def (length items)
+  (def (loop a count)
+    (if (null? a)
+        count
+        (loop (cdr a) (+ 1 count))))
+  (loop items 0))
+
+; (append squares odds)
+
+#|
+(def (append list1 list2)
+  (if (null? list1)
+      list2
+      (cons (car list1) (append (cdr list1) (list2)))))
+|#
+
+;; Exercise 2.17
+
+(def (last-pair l)
+  (cond ((null? l) (error "expected non-empty list"))
+        ((null? (cdr l)) l)
+        (else (last-pair (cdr l)))))
+
+; (last-pair (list 23 72 149 34))
+
+;; Exercise 2.18
+
+(def (reverse l)
+  (def (loop acc src)
+    (if (null? src) acc
+        (loop (cons (car src) acc)
+              (cdr src))))
+  (loop nil l))
+
+(def (append-with-rev l r)
+  (def (loop rev out)
+    (if (null? rev) out
+        (loop (cdr rev)
+              (cons (car rev) out))))
+  (loop (reverse l) r))
+
+; (append-with-rev (list 1 2 3) (list 4 5 6))
+
+(def us-coin (list 50 25 10 5 1))
+(def uk-cins (list 100 50 20 10 5 2 1))
+
+;; Exercise 2.19
+
+(def (cc amount coin-values)
+  (def (first-denomination l) (car l))
+  (def (except-first-denomination l) (cdr l))
+  (cond ((= amount 0) 1)
+        ((or (< amount 0) (null? #|no-more?|# coin-values)) 0)
+        (else
+         (+ (cc amount
+                (except-first-denomination coin-values))
+            (cc (- amount (first-denomination coin-values))
+                coin-values)))))
+
+;; Exercise 2.20
+
+(def (same-parity first . rest)
+  (def (compare x) (= (remainder x 2) (remainder first 2)))
+  (def (loop acc input)
+    (if (null? input)
+        acc
+        (loop (if (compare (car input))
+                  (cons (car input) acc)
+                  acc)
+              (cdr input))))
+  (cons first (loop nil (reverse rest))))
+
+; (same-parity 1 2 3 4 5 6 7)
+; (same-parity 2 3 4 5 6 7)    
+
+#|
+(def (scale-list items factor)
+  (if (null? items)
+      nil
+      (cons (* (car items) factor)
+            (scale-list (cdr items) factor))))
+|#
+
+(def (scale-list items factor)
+  (def (loop acc src)
+    (if (null? src)
+        acc
+        (loop (cons (* factor (car src)) acc)
+              (cdr src))))
+  (loop nil (reverse items)))
+
+; (scale-list (list 1 2 3 4 5) 10)
+
+#|
+(def (map proc items)
+  (if (null? items)
+      nil
+      (cons (proc (car item))
+            (map proc (cdr items)))))
+|#
+
+(def (reverse-collected-map proc items)
+  (def (loop acc src)
+    (if (null? src)
+        acc
+        (loop (cons (proc (car src)) acc)
+              (cdr src))))
+  (loop nil items))
+
+; (def (map proc items) (reverse (reverse-collected-map proc items)))
+
+; (map abs (list -10 2.5 -11.6 17))
+; (map (λ (x) (* x x)) (list 1 2 3 4))
+
+;; Exercise 2.21
+
+#|
+(def (square-list items)
+  (if (null? items)
+      nil
+      (cons (square (car items)) (square-list (cdr items)))))
+|#
+
+(def (square-list items)
+  (map square items))
+;(square-list (list 1 2 3 4))
+
+;; Exercise 2.23
+; building a list requires starting from the end, building it up iteratively will result in an inverted list
+
+
+(def (for-each proc items)
+  (if (null? items)
+      nil
+      (let ((unused (proc (car items))))
+        (for-each proc (cdr items)))))
+; (for-each (λ (x) (newline) (display x)) (list 57 321 88))
+
+; ((λ w (map square w))  1 2 3 4)
+
+;; 2.2.2 Hierarchical Structures
+
+#|
+(def (count-leaves x)
+  (cond ((null? x) 0)
+        ((not (pair? x)) 1)
+        (else (+ (count-leaves (car x))
+                 (count-leaves (cdr x))))))
+|#
+
+(def (count-leaves x)
+  (def (loop acc defer current)
+    (cond ((and (null? defer) (null? current)) acc)
+          ((null? current)
+           (loop acc
+                 (cdr defer)
+                 (car defer)))
+
+          ((pair? (car current))
+           (loop acc
+                 (cons (cdr current) defer)
+                 (car current)))
+
+          (else (loop (inc acc)
+                      defer
+                      (cdr current)))))
+  (loop 0 nil x))
+
+;(def x (cons (list 1 2) (list 3 4)))
+
+#|
+(length x)
+(count-leaves x)
+
+(length (list x x))
+(count-leaves (list x x))
+|#
+
+;; Exercise 2.25
+
+; (1 (2 (3 4)))
+
+;; Exercise 2.26
+
+#|
+(car (cdr (car (cdr (cdr
+                     (list 1 3 (list 5 7) 9 ))))))
+(car (car
+      (list (list 7))))
+((repeated (compose car cdr) 6)
+ (list 1 (list 2 (list 3 (list 4 ( list 5 (list 6 7)))))))
+|#
+
+;; Exercise 2.27
+#|
+(def x-ex2.27 (list 1 2 3))
+(def y-ex2.27 (list 4 5 6))
+
+(append x-ex2.27 y-ex2.27) ; (1 2 3 4 5 6)
+(cons   x-ex2.27 y-ex2.27) ; ((1 2 3) 4 5 6)
+(list   x-ex2.27 y-ex2.27) ; ((1 2 3) (4 5 6)
+|#
+
+
+(def (deep-reverse x)
+  (def (loop acc
+             parent-stack
+             current-child)
+#|    #|degugging|# (for-each (λ (x) (newline) (for-each display x))
+                            (list (list "---")
+                                  (list "acc           : " acc)
+                                  (list "parent-stack  : " parent-stack)
+                                  (list "current-child : " current-child)))
+|#
+    (cond ((and (null? parent-stack) (null? current-child))
+           acc)
+
+          ((and (null? current-child))
+           ;; (newline) (display "=> NULL? CURRENT-CHILD, NULL? SIBLING-STACK")
+           (loop (cons acc (caar parent-stack))
+                 (cdr parent-stack)
+                 (cadar parent-stack)))
+
+          ((list? (car current-child)) #| list is slower but allows for data-structures with pairs |#
+           ;; (newline) (display "=> PAIR? (CAR CURRENT-CHILD)")
+           (loop nil
+                 (cons (list acc (cdr current-child))
+                       parent-stack)
+                 (car current-child)))
+
+          (else
+           ;; (newline) (display "=> ACCUMULATE")
+           (loop (cons (car current-child) acc)
+                 parent-stack
+                 (cdr current-child)))))
+  (loop nil nil x))
+
+#|
+(let ((x (list (list 1 2) (list 3 4)))
+      (y (list 0 1 (list 2 nil (list 3 4) 5 nil) (list 6 7 8)) ))
+ (values (deep-reverse x)
+         (deep-reverse y)))
+|#
+
+;; Exercise 2.29
+
+(def (fringe tree)
+  (def (loop acc defer-stack t)
+    (cond ((and (null? defer-stack) (null? t))
+           acc)
+          
+          ((null? t)       (loop acc
+                                 (cdr defer-stack)
+                                 (car defer-stack)))
+
+          ((list? (car t)) (loop acc
+                                 (cons (cdr t) defer-stack)
+                                 (car t)))
+          
+          (else            (loop (cons (car t) acc)
+                                 defer-stack
+                                 (cdr t)))))
+  (reverse (loop nil nil tree)))
+
+#|
+(let ((x (list (list 1 2)
+               (list 3 4))))
+  (fringe (list x x)))
+|#
+
+;; Exercise 2.30
+
+(def (make-mobile left right)
+  (list left right))
+
+#| structure is either another mobile or a weight |#
+(def (make-branch length structure)
+  (list length structure))
+
+(def (left-branch m)    (car  m))
+(def (right-branch m)   (cadr m))
+
+(def (branch-length m)    (car  m))
+(def (branch-structure m) (car (cdr m)))
+
+(def (total-weight mobile)
+  (def (loop acc defer-stack m)
+    (cond ((and (null? defer-stack) (null? m))
+           acc)
+          ((null? m)
+           (loop acc (cdr defer-stack) (car defer-stack)))
+          ((pair? m)
+           (loop acc
+                 (cons (branch-structure (right-branch m)) defer-stack)
+                 (branch-structure (left-branch m))))
+          (else
+           (loop (+ acc m) defer-stack nil))))
+  (loop 0 nil mobile))
+
+#|
+(let ((x (make-mobile (make-branch 20 5) (make-branch 5 20))))
+       (total-weight x))
+|#
+
+(def (balanced-mobile? mobile)
+  #| A mobile is said to be balanced
+          if   the torque applied by its
+               top-left branch
+            is equal to that applied by its
+               top-right branch
+              (that is,
+                 if   the length of the left rod
+                      multiplied by
+                      the weight hanging from that rod
+                    is equal to
+                      the corresponding product for the right side)
+      and if each of the submobiles hanging off its branches is balanced.  |#
+
+
+  (def (balanced? m)
+    (def (torque b) (* (branch-length b) (branch-structure b))) 
+    (= (torque (left-branch m)) (torque (right-branch m))))
+  ; (def (dbg s v) (newline) (display s) (display v))
+  
+  (def (loop defer-stack #| stack of (cons length opposite-branch) |#
+             current)
+
+    (let* ((left (left-branch current))
+           (right (right-branch current))
+           (nested-left (pair? (branch-structure left)))
+           (nested-right (pair? (branch-structure right))))
+
+      #|
+      (dbg "DEFER-STACK : " defer-stack)
+      (dbg "CURRENT     : " current)
+      |#
+      
+      (cond ((and (null? defer-stack)
+                  (not nested-left)
+                  (not nested-right))
+             (balanced? current))
+
+            (nested-left
+             (loop (cons (list (branch-length left) right)
+                         defer-stack)
+                 (branch-structure left)))
+
+            (nested-right
+             (loop (cons (list (branch-length right) left)
+                         defer-stack)
+                   (branch-structure right)))
+
+            (else (if (balanced? current)
+                      (loop (cdr defer-stack)
+                            (make-mobile (make-branch (caar defer-stack)
+                                                      (+ (branch-structure left) (branch-structure right)))
+                                         (cadar defer-stack)))
+                      false)))))
+    (loop nil mobile))
+
+
+#|
+(let ((x (make-mobile (make-branch 20 (make-mobile (make-branch 1 4)
+                                                   (make-branch 4 1)))
+                      (make-branch 5 (make-mobile (make-branch 1 19)
+                                                   (make-branch 19 1))))))
+       (balanced-mobile? x))
+|#
+
+;; Mapping over trees
+
+#|
+(def (scale-tree tree factor)
+  (cond ((null? tree) nil)
+        ((not (pair? tree)) (* tree factor))
+        (else (cons (scale-tree (car tree) factor)
+                    (scale-tree (cdr tree) factor)))))
+|#
+
+; (scale-tree (list 1 (list 2 (list 3 4) 5) (list 6 7)) 10)
+
+#|
+(define (scale-tree tree factor)
+  (map (lambda (sub-tree)
+         (if (pair? sub-tree)
+           (scale-tree sub-tree factor)
+           (* sub-tree factor)))
+       tree))
+|#
+
+
+
+(def (dfs-tree-map func tree)
+  (def (loop acc
+             defer-stack #| (list (cons acc current-tail) ... ) |#
+             current)
+    (cond ((and (null? defer-stack) (null? current))
+           (reverse acc))
+          ((null? current)
+           (loop (cons (reverse acc) (caar defer-stack))
+                 (cdr defer-stack)
+                 (cdar defer-stack)))
+          ((list? (car current))
+           (loop nil
+                 (cons (cons acc (cdr current)) defer-stack)
+                 (car current)))
+          (else
+           (loop (cons (func (car current)) acc)
+                 defer-stack
+                 (cdr current)))))
+  (loop nil nil tree))
+#|
+(def (scale-tree tree factor)
+  (dfs-tree-map (λ (x) (* factor x)) tree))
+|#
+
+; (scale-tree (list 1 (list 2 (list 3 4) 5) (list 6 7)) 10)
+
+;; Exercise 2.31
+
+(def (square-tree tree)
+  (dfs-tree-map square tree))
+
+#|
+(square-tree
+ (list 1
+       (list 2 (list 3 4) 5)
+       (list 6 7)))
+|#
+
+;; Exercise 2.32
+; did it already with dfs-tree-map
+(def (tree-map func tree) (dfs-tree-map func tree))
+; (define (square-tree tree) (tree-map square tree))
+
+;; Exercise 2.33
+
+#|
+(define (subsets s)
+  (if (null? s)
+    (list nil)
+    (let ((rest (subsets (cdr s))))
+      (append rest (map (λ (x) (cons (car s) x)) rest)))))
+|#
+(def (subsets s) #| as a set the order does not matter |#
+  (def (loop acc current)
+    (cond ((and (null? current))
+           acc)
+          (else
+           (loop (append (map (λ (x) (cons (car current) x))
+                            acc)
+                       acc)
+                 (cdr current)) )))
+  (loop (list nil) s))
+
+; (subsets (list 1 2 3))
+
+;; 2.2.3 Sequences as Conventional Interfaces
+
+#|
+(define (sum-odd-squares tree)
+  (cond ((null? tree) 0)  
+        ((not (pair? tree))
+          (if (odd? tree) (square tree) 0))
+        (else (+ (sum-odd-squares (car tree))
+          (sum-odd-squares (cdr tree))))))
+|#
+
+(def (sum-odd-squares tree)
+  (def (loop acc cur)
+    (cond ((null? cur)
+           acc)
+          ((pair? (car cur))
+           (loop acc
+                 (append (car cur) (cdr cur))))
+          (else
+           (loop (if (odd? (car cur)) (+ acc (square (car cur)))
+                     acc)
+                 (cdr cur)))))
+  (loop 0 tree))
+
+; (sum-odd-squares (list 1 2 3 (list 4 5 (list 6) 7) 8 (list 9)))
+
+#|
+(define (even-fibs n)
+  (define (next k)
+    (if (> k n)
+      nil
+      (let ((f (fib k)))
+        (if (even? f)
+          (cons f (next (+ k 1)))
+          (next (+ k 1))))))
+  (next 0))
+|#
+
+(def (even-fibs n)
+  (def (loop acc cur next count)
+    (cond ((> count n)
+           acc)
+          (else 
+           (loop (if (even? cur) (cons cur acc)
+                     acc)
+                 next
+                 (+ cur next)
+                 (inc count)))))
+  (reverse (loop nil 0 1 0)))
+
+; (even-fibs 20)
+
+;; Sequence Operations
+
+#|
+(define (filter predicate sequence)
+  (cond ((null? sequence) nil)
+        ((predicate (car sequence))
+          (cons (car sequence)
+                (filter predicate (cdr sequence))))
+        (else (filter predicate (cdr sequence)))))
+|#
+
+(def (filter predicate sequence)
+  (def (loop acc cur)
+    (cond ((null? cur)
+           acc)
+          (else
+           (loop (if (predicate (car cur)) (cons (car cur) acc)
+                     acc)
+                 (cdr cur)))))
+  (reverse (loop nil sequence)))
+
+; (filter odd? (list 1 2 3 4 5))
+
+#|
+(define (accumulate op initial sequence)
+  (if (null? sequence)
+    initial
+    (op (car sequence)
+        (accumulate op initial (cdr sequence)))))
+|#
+
+(def (accumulate op initial sequence)
+  (def (loop acc cur)
+    (cond ((null? cur)
+           acc)
+          (else
+           (loop (op (car cur) acc)
+                 (cdr cur)))))
+ (loop initial (reverse sequence)))
+
+; (accumulate + 0 (list 1 2 3 4 5))
+; (accumulate * 1 (list 1 2 3 4 5))
+
+; (accumulate cons nil (list 1 2 3 4 5))
+
+#|
+(define (enumerate-interval low high)
+   (if (> low high)
+      nil
+      (cons low (enumerate-interval (+ low 1) high))))
+|#
+
+(def (enumerate-interval low high)
+  (def (loop acc cur)
+    (cond ((< cur low)
+           acc)
+          (else
+           (loop (cons cur acc)
+                 (dec cur)))))
+  (loop nil high))
+
+; (enumerate-interval 2 7)
+
+#|
+(define (enumerate-tree tree)
+   (cond ((null? tree) nil)
+         ((not (pair? tree)) (list tree))
+         (else (append (enumerate-tree (car tree))
+                       (enumerate-tree (cdr tree))))))
+|#
+
+(def (enumerate-tree tree)
+  (def (loop acc cur)
+    (cond ((null? cur)
+           acc)
+          ((list? (car cur))
+           (loop acc
+                 (append (car cur) (cdr cur))))
+          (else
+           (loop (cons (car cur) acc)
+                 (cdr cur)))))
+  (reverse (loop nil tree)))
+
+; (enumerate-tree (list 1 (list 2 (list 3 4)) 5))
+
+(def (sum-odd-squares-2 tree)
+  (accumulate + 0 (map square (filter odd? (enumerate-tree tree)))))
+
+; (sum-odd-squares-2 (list 1 2 3 (list 4 5 (list 6) 7) 8 (list 9)))
+
+(def (fib n) (fib-3 n))
+
+(def (even-fibs-2 n)
+  (accumulate cons nil (filter even? (map fib (enumerate-interval 0 n)))))
+
+; (even-fibs-2 20)
+
+(def (list-fib-squares n)
+  (accumulate cons nil (map square (map fib (enumerate-interval 0 n)))))
+
+; (list-fib-squares 10)
+
+(def (product-of-squares-of-odd-elements sequence)
+  (accumulate * 1 (map square (filter odd? sequence))))
+
+; (product-of-squares-of-odd-elements (list 1 2 3 4 5))
+#|
+(define (salary-of-highest-paid-programmer records)
+  (accumulate max
+              0
+              (map salary
+                   (filter programmer? records))))
+|#
+
+
+;; Exercise 2.34
+
+(define (map-2 p sequence)
+  (accumulate (lambda (x y) (cons (p x) y)) nil sequence))
+
+; (map-2 inc (list 1 2 3))
+
+(define (append-2 seq1 seq2)
+  (accumulate cons seq2 seq1))
+
+; (append-2 (list 1 2 3) (list 4 5 6)) 
+
+(define (length-2 sequence)
+  (accumulate (λ (x y) (inc y)) 0 sequence))
+
+; (length-2 (enumerate-interval 1 10))
+
+
+;; Exercise 2.35
+
+(def (horner-eval x coefficient-sequence)
+  (accumulate (λ (this-coeff higher-terms) (+ (* higher-terms x) this-coeff))
+              0
+              coefficient-sequence))
+
+; (horner-eval 2 (list 1 3 0 5 0 1))
+
+;; Exercise 2.36
+
+#|
+(def (count-leaves-2 t)
+  (accumulate + 0 (map (λ (x) (if (list? x) (count-leaves-2 x) 1))
+                       t)))
+|#
+
+;; Exercise 2.37
+
+#|
+(def (accumulate-n op init seqs)
+  (if (null? (car seqs))
+      nil
+      (cons (accumulate op init (map car seqs))
+            (accumulate-n op init (map cdr seqs)))))
+|#
+
+(def (accumulate-n op init seqs)
+  (def (loop acc cur)
+    (if (null? (car cur))
+        acc
+        (loop (cons (accumulate op init (map car cur))
+                    acc)
+              (map cdr cur))))
+  (reverse (loop nil seqs)))
+
+
+; (accumulate-n + 0 (list (list 1 2 3) (list 4 5 6) (list 7 8 9) (list 10 11 12)))
+
+;; Exercise 2.38
+
+(def (dot-product v w)
+  (accumulate + 0 (map * v w)))
+
+; (dot-product (list 1 2 3) (list 1 0 5))
+
+(def (matrix-*-vector m v)
+  (map (λ (x) (dot-product v x)) m))
+#|
+(matrix-*-vector
+ (list (list 1 2 3)
+       (list 4 5 6)
+       (list 7 8 9))
+ (list 0 1 2))
+|#
+
+(def (transpose mat)
+  (accumulate-n cons nil mat))
+
+#|
+(transpose
+ (list (list 1 2 3)
+       (list 4 5 6)
+       (list 7 8 9)))
+|#
+
+(def (matrix-*-matrix m n)
+  (let ((cols (transpose n)))
+    (map (λ (row) (map (λ (col) (dot-product row col)) cols))
+         m)))
+
+#|
+(matrix-*-matrix
+ (list (list 1 2 3)
+       (list 4 5 6)
+       (list 7 8 9))
+ (list (list 1 0 0)
+       (list 0 2 0)
+       (list 0 0 3)))
+|#
+
+;; Exercise 2.39
+
+(def (fold-right op initial sequence) (accumulate op initial sequence))
+
+(def (fold-left op initial sequence)
+  (def (iter result rest)
+    (if (null? rest)
+        result
+        (iter (op result (car rest))
+              (cdr rest))))
+  (iter initial sequence))
+
+#|
+(fold-right / 1 (list 1 2 3))
+(fold-left  / 1 (list 1 2 3))
+
+(fold-right list nil (list 1 2 3))
+(fold-left  list nil (list 1 2 3))
+|#
+
+; commutative + assocative
+
+;; Exercise 2.40
+
+(def (reverse-2 sequence)
+  (fold-right (λ (x y) (append y (list x))) nil sequence))
+
+
+(def (reverse-3 sequence)
+  (fold-left (λ (x y) (cons y x)) nil sequence))
+
+#|
+(reverse-2 (list 1 2 3))
+(reverse-3 (list 1 2 3))
+|#
+
+#|
+((λ (n)
+  (accumulate append nil
+              (map (λ (i) 
+                     (map (λ (j) (list i j))
+                          (enumerate-interval 1 (- i 1))))
+                   (enumerate-interval 1 n))))
+
+ 5)
+|#
+
+;; Nested Mappings
+
+(def (flatmap proc seq)
+  (accumulate append nil (map proc seq)))
+
+(def (prime-sum? pair)
+  (prime? (+ (car pair) (cadr pair))))
+
+(def (make-pair-sum pair)
+  (list (car pair) (cdr pair ) (+ (car pair) (cadr pair))))
+
+(def (prime-sum-pair n)
+  (map make-pair-sum
+       (filter prime-sum?
+               (flatmap
+                (λ (i)
+                  (map (λ (j) (list i j))
+                       (enumerate-interval 1 (- i 1))))
+                (enumerate-interval 1 n)))))
+
+#|
+(def (permutations s)
+  (if (null? s)
+      (list nil)
+      (flatmap (λ (x)                                 ;; the flatmap is the state to save
+                 (map (λ (p) (cons x p))
+                      (permutations (remove x s))))
+               s)))
+|#
+
+(define (remove item sequence)
+  (filter (lambda (x) (not (= x item)))
+          sequence))
+
+(def (permutations s)
+  
+  (def (loop acc   ;; permutation accumulator
+             stack ;; (list (cons acc removed cur) ...)
+             iter  ;; working down current
+             cur)
+    #| #|debugging|#
+    (for-each display (list      "\nACC : " acc "\nSTK : " ))
+    (for-each (λ (i) (display    "\n       | ") (for-each (λ (j) (display "\n         ")(display j)) i))
+              stack)
+    (for-each display (list      "\nITR : " iter "\nCUR : " cur "\n----\n"))
+    |#
+    (cond ((and (null? stack) (null? iter))
+           acc)
+
+          ((and (null? acc) (null? cur)) ; (display "=> LEAF\n")
+           (loop (list nil) stack nil nil))
+          
+          ((null? iter) ; (display "=> POP\n")
+           (let ((top (car stack)))
+             (loop (append (map (λ (p) (cons (caadr top) p))
+                                acc)
+                           (caar stack))
+                   (cdr stack)
+                   (cdr (cadr  top))
+                   (caddr  top))))
+
+          (else ; (display "=> PUSH\n")
+           (loop nil
+                 (cons (list acc iter cur ) stack)
+                 (remove (car iter) cur)
+                 (remove (car iter) cur)))))
+  
+  (loop nil nil s s))
+
+; (permutations (list 1 2 3 4))
+
+;; Exercise 2.41
+
+(def (unique-pairs n)
+  (def e enumerate-interval)
+  (flatmap (λ (i) (map (λ (j) (cons i j))  (e 1 (if (= i 1) 1 (dec i))))) (e 1 n)))
+
+(def (prime-sum-pairs-2 n)
+  (filter (λ (p) (prime? (+ (car p) (cdr p))))  (unique-pairs n)))
+
+;; Exercise 2.42
+
+(def (ex-2.24 n s)
+  (def e enumerate-interval)
+  (def (e-less x) (e 1 (if (= x 1) 1 (dec x))))
+  (filter (λ (triple) (= s (accumulate + 0 triple)))
+          (flatmap (λ (i) (flatmap (λ (j) (map (λ (k) (list i j k))
+                                               (e-less j)))
+                                   (e-less i)))
+                   (e 1 n))))
+
+; (ex-2.24 20 10)
+
+;; Exercise 2.43
+
+
+(define (queens board-size)
+  (def empty-board nil)
+  (def (adjoin-position  r c rest) (cons (cons r c) rest))
+  (def (safe? k positions)
+         ;; the new position
+    (let ((first-row (caar positions))
+          (first-col (cdar positions)))
+      (accumulate (λ (pos so-far)
+                    (let ((row (car pos))
+                          (col (cdr pos)))
+                      (and so-far                                        ; by definition different colomns
+                           (not (= (- first-row first-col) (- row col))) ; diagonal
+                           (not (= (+ first-row first-col) (+ row col))) ; other diagonal
+                           (not (= first-row row)))))                    ; row
+                  true
+                  (cdr positions))))
+  #|
+  (def (queen-cols k)
+    (if (= k 0)
+      (list empty-board)
+      (filter
+        (λ (positions) (safe? k positions))
+        (flatmap
+          (λ (rest-of-queens) (map (λ (new-row) (adjoin-position new-row k rest-of-queens))
+                                   (enumerate-interval 1 board-size)))
+          (queen-cols (- k 1))))))
+  (queen-cols board-size)
+  |#
+
+
+  (def (loop acc k)
+    (if (= k 0)
+           acc
+           (loop (filter (λ (positions) (safe? k positions))
+                         (flatmap
+                          (λ (rest-of-queens)
+                            (map (λ (new-row) (adjoin-position new-row k rest-of-queens))
+                                 (enumerate-interval 1 board-size)))
+                          acc))
+                 (dec k)))) 
+
+  (loop (list nil) board-size))
+
+; (queens 5)
+
+;; Exercise 2.44
+; punt
+
+;; 2.2.4 Example: A Picture Language
+
+; (paint einstein)
+(def wave einstein)
+
+#|
+(def wave2
+  (beside wave (flip-vert wave)))
+(def wave4
+  (below wave2 wave2))
+|#
+
+; (paint wave4)
+
+(def (flipped-pairs painter)
+  (let ((painter2 (beside painter (flip-vert painter))))
+    (below painter2 painter2)))
+
+(def wave4 (flipped-pairs wave))
+
+; (paint wave4)
+
+#|
+(def (right-split painter n)
+  (if (= n 0)
+      painter
+      (let ((smaller (right-split painter (- n 1))))
+        (beside painter (below smaller smaller)))))
+|#
+
+(def (right-split painter n)
+  (def (loop acc cur)
+    (if (= cur 0)
+        acc
+        (loop (beside painter (below acc acc))
+              (dec cur))))
+  (loop painter n))
+
+
+; (paint (right-split wave 5))
+
+#|
+(def (corner-split painter n)
+  (if (= n 0)
+    painter
+    (let ((up (up-split painter (- n 1)))
+          (right (right-split painter (- n 1))))
+      (let ((top-left (beside up up))
+            (bottom-right (below right right))
+            (corner (corner-split painter (- n 1))))
+        (beside (below painter top-left)
+                (below bottom-right corner))))))
+|#
+(def (corner-split painter n)
+  (def (loop acc cur)
+    (if (= cur 0)
+        acc
+        (let* ((dif (- n cur))
+               (up (up-split painter dif))
+               (right (right-split painter dif))
+               (top-left (beside up up))
+               (bottom-right (below right right))
+               (corner acc))
+          (loop (beside (below painter top-left)
+                        (below bottom-right corner))
+                (dec cur)))))
+  (loop painter n))
+
+
+
+(def (square-limit painter n)
+  (let* ((quarter (corner-split painter n))
+         (half (beside (flip-horiz quarter) quarter)))
+    (below (flip-vert half) half)))
+
+;; Exercise 2.45
+
+(def (up-split painter n)
+  (def (loop acc cur)
+    (if (= cur 0)
+        acc
+        (loop (below painter (beside acc acc))
+              (dec cur))))
+  (loop painter n))
+
+; (paint (corner-split wave 5))
+
+; (paint (square-limit wave 5))
+
+;; Higher-order operations
+
+(def (square-of-four tl tr
+                     bl br)
+  (λ (painter)
+    (let ((top (beside (tl painter) (tr painter)))
+          (bottom (beside (bl painter) (br painter))))
+      (below bottom top))))
+
+(def (flipped-pairs-2 painter)
+  (square-of-four identity flip-vert
+                  identity flip-vert))
+
+(def (square-limit-2 painter n)
+  (let ((combine4 (square-of-four flip-horiz identity
+                                  rotate180 flip-vert)))
+    (combine4 (corner-split painter n))))
+
+(def (split half rest)
+  (λ (painter n)
+  (def (loop acc cur)
+    (if (= cur 0)
+        acc
+        (loop (half painter (rest acc acc))
+              (dec cur))))
+  (loop painter n)))
+
+#|
+(map paint
+(let ()
+ (define right-split (split beside below))
+ (define up-split (split below beside))
+ (list (right-split wave 5)
+       (up-split wave 5)
+       (square-limit wave 5))))
+|#
+
+;; Frames
+
+(define (frame-coord-map frame)
+  (lambda (v)
+    (add-vect
+      (origin-frame frame)
+      (add-vect (scale-vect (xcor-vect v)
+                            (edge1-frame frame))
+                (scale-vect (ycor-vect v)
+                            (edge2-frame frame))))))
+
+;;  Exercise 2.47
+#|
+(def (make-vect x y) (cons x y))
+(def (xcor-vect v)   (car v))
+(def (ycor-vect v)   (cdr v))
+
+(def (dyad-vect f)
+  (λ (v1 v2) (make-vect (f (xcor-vect v1) (xcor-vect v2))
+                        (f (ycor-vect v1) (ycor-vect v2)))))
+(def (monad-vect f)
+  (λ (v) (make-vect (f (xcor-vect v)) (f (ycor-vect v)))))
+
+(def (add-vect v1 v2)
+  ((dyad-vect +) v1 v2))
+
+(def (sub-vect v1 v2)
+  ((dyad-vect -) v1 v2))
+
+(def (scale-vect s v)
+  ((monad-vect (λ (coord) (* s coord))) v))
+
+(def zero-vect (make-vect 0 0))
+(def x-vect (make-vect 1 0))
+(def y-vect (make-vect 0 1))
+|#
+
+(def xcor-vect vector-xcor)
+(def ycor-vect vector-ycor)
+(def add-vect  vector-add)
+(def sub-vect  vector-sub)
+(def scale-vect vector-scale)
+
+
+#|
+(let ((x (make-vect 1 0))
+      (y (make-vect 0 1)))
+  (list (add-vect x y)
+        (sub-vect x y)
+        (scale-vect x 5)))
+|#
+
+
+;; Exercise 2.48
+#|
+(def (make-frame origin edge1 edge2)
+  (list origin edge1 edge2))
+
+(def (origin-frame f) (car f))
+(def (edge1-frame f) (cadr f))
+(def (edge2-frame f) (caddr f))
+|#
+#|
+(def (make-frame origin edge1 edge2)
+  (cons origin (cons edge1 edge2)))
+(def (edge2-frame f) (cddr f))
+|#
+
+(def origin-frame frame-origin)
+(def edge1-frame  frame-edge1)
+(def edge2-frame  frame-edge2)
+
+
+;; Painters
+
+#|
+(def (segments->painter segment-list)
+  (λ (frame)
+    (for-each
+     (lambda (segment)
+       (draw-line
+        ((frame-coord-map frame) (start-segment segment))
+        ((frame-coord-map frame) (end-segment segment))))
+     segment-list)))
+|#
+
+;; Exercise 2.49
+#|
+(def (make-segment from to)
+  (cons from to))
+(def (start-segment s) (car s))
+(def (end-segment s) (cdr s))
+|#
+(def start-segment segment-start)
+(def end-segment   segment-start)
+
+;; Exercise 2.50
+
+
+;; a
+(def outline (segments->painter
+              (list (make-segment (make-vect 0 0) (make-vect 0 1))
+                    (make-segment (make-vect 0 1) (make-vect 1 1))
+                    (make-segment (make-vect 1 1) (make-vect 1 0))
+                    (make-segment (make-vect 1 0) (make-vect 0 0)))))
+; (paint outline)
+
+;; b
+
+(def opposite (segments->painter
+               (list (make-segment (make-vect 0 0) (make-vect 1 1))
+                     (make-segment (make-vect 1 0) (make-vect 0 1)))))
+
+; (paint opposite)
+
+(def diamond (segments->painter
+              (list (make-segment (make-vect   0 0.5) (make-vect 0.5   0))
+                    (make-segment (make-vect 0.5   0) (make-vect   1 0.5))
+                    (make-segment (make-vect   1 0.5) (make-vect 0.5   1))
+                    (make-segment (make-vect 0.5   1) (make-vect 0   0.5)))))
+; (paint diamond)
+
+(def wave-pattern (let* ((x (λ (n) (* n (/ 1 12))))
+                        (y (λ (n) (* n (/ 1 8))))
+                        (v (λ (x-steps y-steps) (make-vect (x x-steps) (y y-steps)))))
+                    (segments->painter
+                     (list (make-segment (v 0 7)  (v 2 5))
+                           (make-segment (v 2 5)  (v 4 6))
+                           (make-segment (v 4 6)  (v 5 6))
+                           (make-segment (v 5 6)  (v 4 7))
+                           (make-segment (v 4 7)  (v 5 8))
+                           (make-segment (v 7 8)  (v 8 7))
+                           (make-segment (v 8 7)  (v 7 6))
+                           (make-segment (v 7 6)  (v 9 6))
+                           (make-segment (v 9 6)  (v 12 2))
+                           (make-segment (v 12 1) (v 8 4))
+                           (make-segment (v 8 4)  (v 9 0))
+                           (make-segment (v 7 0)  (v 6 3))
+                           (make-segment (v 6 3)  (v 5 0))
+                           (make-segment (v 3 0)  (v 5 4))
+                           (make-segment (v 5 4)  (v 4 5))
+                           (make-segment (v 4 5)  (v 2 3))
+                           (make-segment (v 2 3)  (v 0 5))))))
+
+; (paint (corner-split wave-pattern 10))
+; (paint (square-limit wave-pattern 5))
+
+;; Transforming and combining painters
+
+#|
+(def (transform-painter painter origin corner1 corner2)
+  (lambda (frame)
+    (let* ((m (frame-coord-map frame))
+           (new-origin (m origin)))
+      (painter
+       (make-frame new-origin
+                   (sub-vect (m corner1) new-origin)
+                   (sub-vect (m corner2) new-origin))))))
+|#
+#|
+(define (flip-vert painter)
+  (transform-painter painter
+    (make-vect 0.0 1.0)   ; new origin
+    (make-vect 1.0 1.0)   ; new end of edge1
+    (make-vect 0.0 0.0))) ; new end of edge2
+|#
+
+#|
+(define (rotate90 painter)
+  (transform-painter painter
+    (make-vect 1.0 0.0)
+    (make-vect 1.0 1.0)
+    (make-vect 0.0 0.0)))
+|#
+
+
+(define (squash-inwards painter)
+  (transform-painter painter
+    (make-vect 0.0 0.0)
+    (make-vect 0.65 0.35)
+    (make-vect 0.35 0.65)))
+
+#|
+(paint wave-pattern)
+(paint (squash-inwards
+        (square-limit wave-pattern 5)))
+|#
+
+#|
+(define (beside painter1 painter2)
+  (let ((split-point (make-vect 0.5 0.0)))
+    (let ((paint-left
+            (transform-painter painter1
+              (make-vect 0.0 0.0)
+              split-point
+              (make-vect 0.0 1.0)))
+          (paint-right
+            (transform-painter painter2
+              split-point
+              (make-vect 1.0 0.0)
+              (make-vect 0.5 1.0))))
+      (lambda (frame)
+        (paint-left frame)
+        (paint-right frame)))))
+|#
+
+;; Exercise 2.51
+
+;; a
+#|
+(define (flip-horiz painter)
+  (transform-painter painter
+    (make-vect 1.0 0.0)   ; new origin
+    (make-vect 0.0 0.0)   ; new end of edge1
+    (make-vect 1.0 1.0))) ; new end of edge2
+|#
+;; b
+
+(define (rotate180 painter)
+  (transform-painter painter
+    (make-vect 1.0 1.0)   ; new origin
+    (make-vect 0.0 1.0)   ; new end of edge1
+    (make-vect 1.0 0.0))) ; new end of edge2
+
+;; c
+(define (rotate270 painter)
+  (transform-painter painter
+    (make-vect 0.0 1.0)   ; new origin
+    (make-vect 0.0 0.0)   ; new end of edge1
+    (make-vect 1.0 0.0))) ; new end of edge2
+
+;; Exercise 2.52
+#|
+(define (below painter1 painter2)
+  (let ((split-point (make-vect 0.0 0.5)))
+    (let ((paint-upper
+            (transform-painter painter1
+              split-point
+              (make-vect 1.0 0.0)
+              (make-vect 0.0 0.5)))
+          (paint-lower
+            (transform-painter painter2
+              (make-vect 0.0 0.0)
+              (make-vect 1.0 0.0)
+              split-point)))
+      (lambda (frame)
+        (paint-upper frame)
+        (paint-lower frame)))))
+|#
+;; b
+#|
+(define (below painter1 painter2)
+   (rotate270 (beside (rotate90 painter1)
+                      (rotate90 painter2))))
+|#
+;; Levels of language for robust design
+
+;; Exercise 2.53
+; punt
+
+;; 2.3 Symbolic Data
+
+;; 2.3.1 Quotation Strings
+
+; (a b c d)
+; (23 45 17)
+; ((Norah 12) (Molly 9) (Anna 7) (Lauren 6) (Charlotte 4))
+; (* (+ 23 45) (+ x 9))
+; (def (fact n) (if (= n 1) 1 (* n (fact (- n 1)))))
+
+#|
+(def a 1)
+(def b 2)
+(list a b)
+; (1 2)
+(list 'a 'b)
+; (a b)
+(list 'a b)
+; (a 2)
+|#
+#|
+(car '(a b c))
+(cdr '(a b c))
+|#
+
+#|
+(def (memq item x)
+  (cond ((null? x) false)
+        ((eq? item (car x)) x)
+        (else (memq item (cdr x)))))
+|#
+
+
+(def (memq item x)
+  (def (loop cur)
+    (cond ((null? cur)
+           false)
+          ((eq? item (car cur)) cur)
+          (else (loop (cdr cur)))))
+  (loop x))
+
+; (memq 'apple '(pear banana prune))
+; (memq 'apple '(x (apple sauce) y apple pear))
+
+;; Exercise 2.54
+
+#|
+(list  'a 'b 'c)                         ; (a b c)
+(list  (list 'george))                   ; ((george))
+(cdr   '((x1 x2) (y1 y2)))               ; (y1 y2)
+(cadr  '((x1 x2) (y1 y2)))               ; y1
+(pair? (car '(a short list)))            ; #f
+(memq  'red '((red shoes) (blue socks))) ; (red shoes)
+(memq  'red '(red shoes blue socks))     ; (red shoes blue socks)
+|#
+
+;; Exercise 2.55
+
+(def (equal? a b)
+  (def (loop l r stack)
+    (def (pop) (loop (caar stack)
+                     (cdar stack)
+                     (cdr stack)))
+    (cond ((and (null? l)
+                (null? r)
+                (null? stack))
+            true)
+           
+           ((not (pair? l))
+            (if (eq? l r)
+                (if (null? stack)
+                    true
+                    (pop))
+                false))
+            
+           ((pair? r)
+            (loop (car l)
+                  (car r)
+                  (cons (cons (cdr l) (cdr r))
+                        stack)))
+           (else false)))
+    (loop a b nil))
+
+#|
+(equal? 'a 'a)
+(equal? 'a 'b)
+(equal? 'a '(b))
+(equal? '(a) 'b)
+(equal? '(this is a list) '(this is a list))
+(equal? '(this is a list) '(this (is a) list))
+|#
+
+; (car 'abc)
+
+;; 2.3.2 Example: Symbolic Differentiation
+
+;; The differentiation program with abstract data
+
+#|
+(variable? e)
+(same-variable? v1 v2)
+(sum? e)
+(addend e)
+(augend e)
+(make-sum a1 a2)
+(product? e)
+(multiplier e)
+(multiplicand e)
+(make-product m1 m2)
+|#
+
+#|
+(def (deriv exp var)
+  (cond ((number? exp)
+         0)
+        ((variable? exp)
+         (if (same-variable? exp var) 1 0))
+        
+        ((sum? exp)
+         (make-sum (deriv (addend exp) var)          
+                   (deriv (augend exp) var)))        
+        ((product? exp)
+         (make-sum
+          (make-product (multiplier exp)
+                        (deriv (multiplicand exp) var))
+          (make-product (deriv (multiplier exp) var)
+                        (multiplicand exp))))
+        (else
+         (error "unknown expression type -- DERIV" exp))))
+|#
+
+(def (variable? x)          (symbol? x))
+(def (same-variable? v1 v2) (and (variable? v1) (variable? v2) (eq? v1 v2)))
+; (def (make-sum a1 a2)       (list '+ a1 a2))
+(def (make-sum a1 a2)
+  (cond ((=number? a1 0) a2)
+        ((=number? a2 0) a1)
+        ((and (number? a1) (number? a2)) (+ a1 a2))
+        ((and (negation? a1) (negation? a2)) (make-neg (list '+ (neg-value a1) (neg-value a2))))
+        (else (list '+ a1 a2))))
+
+(def (=number? exp num)
+  (and (number? exp) (= exp num)))
+
+;(def (make-product m1 m2)   (list '* m1 m2))
+(def (make-product m1 m2)
+  (cond ((or (=number? m1 0) (=number? m2 0)) 0)
+        ((=number? m1 1) m2)
+        ((=number? m2 1) m1)
+        ((and (number? m1) (number? m2)) (* m1 m2))
+        ((and (negation? m1) (negation? m2)) (make-neg (list '* m1 (neg-value m2))))
+        ((negation? m1) (make-neg (list '* (neg-value m1) m2)))
+        ((negation? m2) (make-neg (list '* m1 (neg-value m2))))
+        (else (list '* m1 m2))))
+
+(def (sum? x)               (and (pair? x) (eq? (car x) '+)))
+(def (addend s)             (cadr s))
+; (def (augend s)             (caddr s))
+(def (augend s)
+  (accumulate make-sum 0 (cddr s)))
+(def (product? x)           (and (pair? x) (eq? (car x) '*)))
+(def (multiplier p)         (cadr p))
+; (def (multiplicand p)       (caddr p))
+(def (multiplicand p)
+  (accumulate make-product 1 (cddr p)))
+      
+(def (deriv exp var)
+  (def (prev-acc       stack) (caar   stack))
+  (def (prev-directive stack) (cadar  stack))
+  (def (prev           stack) (caddar stack))
+  (def (make-stack-frame acc directive current)
+    (list acc directive current))
+  
+  (def (loop acc
+             stack
+             directive
+             cur)
+    (def POP?   (eq? 'POP directive))
+    (def DERIV? (eq? 'DERIV directive))
+    (cond ((and (null? stack) POP?)
+           acc)
+
+          (POP? (loop (cons acc (prev-acc stack))
+                      (cdr            stack)
+                      (prev-directive stack)
+                      (prev           stack)))
+          
+          ((and DERIV? (not (pair? cur)))
+           (cond ((number? cur)   (loop 0 stack 'POP nil)) 
+                ((variable? cur) (loop (if (same-variable? cur var) 1 0)
+                                       stack
+                                       'POP
+                                       nil))))
+
+
+          
+          ((and DERIV? (exponentiation? cur))
+           (loop (make-product
+                       (exp-exponent cur)
+                       (make-exp (exp-base cur)
+                                 (make-sub (exp-exponent cur) 1)))
+                 stack
+                 'POP
+                 nil))
+          
+          ((and DERIV? (negation? cur))
+           (loop nil
+                 (cons (make-stack-frame acc 'NEG cur) stack)
+                 'DERIV
+                 (neg-value cur)))
+          
+          ((eq? 'NEG directive)
+           (loop (make-neg (car acc)) stack 'POP nil))
+                 
+          ((and DERIV? (sum? cur))
+           (loop nil
+                 (cons (make-stack-frame acc 'ADDEND->AUGEND->SUM cur) stack)
+                 'DERIV
+                 (addend cur)))
+          
+          ((eq? 'ADDEND->AUGEND->SUM directive)
+           (loop nil
+                 (cons (make-stack-frame acc 'AUGEND->SUM cur) stack)
+                 'DERIV
+                 (augend cur)))
+          
+          ((eq? 'AUGEND->SUM directive)
+           (loop acc stack 'SUM  nil))
+          
+          ((eq? 'SUM directive)
+           (loop (make-sum (cadr acc) (car acc))
+                 stack
+                 'POP
+                 nil))
+          
+          ((and DERIV? (product? cur))
+           (loop nil
+                 (cons (make-stack-frame acc 'PROD1->PROD2->SUM cur) stack)
+                 'DERIV
+                 (multiplicand cur)))
+          
+          ((eq? 'PROD1->PROD2->SUM directive)
+           (loop nil
+                 (cons (make-stack-frame (cons (make-product (multiplier cur) (car acc))
+                                               (cdr acc))
+                                         'PROD2->SUM
+                                         cur)
+                       stack)
+                 'DERIV
+                 (multiplier cur)))
+  
+          ((eq? 'PROD2->SUM directive)
+           (loop (cons  (make-product (car acc) (multiplicand cur)) (cdr acc))
+                 stack
+                 'SUM
+                 nil))
+          
+          (else
+           (error "unknown expression type -- DERIV" exp))))
+
+    (loop nil nil 'DERIV exp))
+                  
+           
+; (deriv '(+ x 3) 'x)
+; (deriv '(* x y) 'x)
+; (deriv '(* (* x y) (+ x 3)) 'x)
+
+; (deriv '(* x (+ x 3)) 'x)
+
+;; Exercise 2.60
+
+(def (exponentiation? l)
+  (if (not (pair? l))
+      false
+      (eq? '** (car l))))
+
+(def (make-exp x n)
+  (cond ((=number? x 1) 1)
+        ((=number? n 0) 1)
+        ((=number? n 1) x)
+        ((and (negation? x) (number? n) (= 0 (remainder n 2)))
+         (list '** (neg-value x) n))
+        ((and (negation? x) (number? n) (= 1 (remainder n 2)))
+         (make-neg (list '** (neg-value x) n)))
+        (else (list '** x n))))
+
+
+(def (make-sub a1 a2)
+  (cond ((=number? a1 0) (- a2))
+        ((=number? a2 0) a1)
+        ((and (number? a1) (number? a2)) (- a1 a2))
+        ((number? a2) (list '+ a1 (- a2)))
+        (else (list '+ a1 (make-neg a2)))))
+
+(def (make-neg a)
+  (cond ((number? a) (- a))
+        ((and (negation? a) (> (length a) 2)) (error "not implemented"))
+        ((negation? a) (cadr a))
+        (else (list '- a))))
+
+(def (negation? l)
+  (if (not (pair? l))
+      false
+      (eq? '- (car l))))
+
+(def (exp-base     e) (cadr  e))
+(def (exp-exponent e) (caddr e))
+(def (neg-value    e) (cadr  e))
+
+#|
+(deriv '(* (* (** (- x) 4)
+              y)
+           (+ x 3))
+       'x)
+|#
+
+; (make-sum '(- x) '(- y))
+
+;; Exercise 2.61
+; look at augend and multiplicand definitions
+
+; (deriv '(* x y (+ x 3)) 'x)
+
+;; Exercise 2.62
+; punt
+
+;; 2.2.3 Example : Representing Sets
+
+; Sets as unorders lists
+
+(def (element-of-set? x set)
+  (cond ((null? set) false)
+        ((equal? x (car set)) true)
+        (else (element-of-set? x (cdr set)))))
+
+; (element-of-set? 'a '(a b c))
+
+(def (adjoin-set x set)
+  (if (element-of-set? x set)
+      set
+      (cons x set)))
+
+; (adjoin-set 'z '(a b c))
+#|
+(def (intersection-set set1 set2)
+  (cond ((or (null? set1) (null? set2)) '())
+        ((element-of-set? (car set1) set2)
+         (cons (car set1)
+               (intersection-set (cdr set1) set2)))
+        (else (intersection-set (cdr set1) set2))))
+|#
+
+(def (intersection-set set1 set2)
+  (def (loop acc cur)
+    (cond ((or (null? cur) (null? set2))
+           acc)
+
+          ((element-of-set? (car cur) set2)
+           (loop (cons (car cur) acc)
+                 (cdr cur)))
+
+          (else (loop acc (cdr cur)))))
+  (reverse (loop '() set1))) 
+
+
+; (intersection-set '(a b c 1 2 3) '(b c d 2 3 4))
+
+;; Exercise 2.63
+
+
+(def (union-set set1 set2)
+  (def (loop acc cur)
+    (cond ((null? cur)
+           acc)
+          
+          ((element-of-set? (car cur) set2)
+           (loop acc
+                 (cdr cur)))
+          
+          (else
+           (loop (cons (car cur) acc)
+                 (cdr cur)))))
+  (loop set2 set1))
+
+; (union-set '(a b c d) '(c d e f))
+
+;; Exercise 2.64
+
+
+(def (element-of-set2 x set)
+  (if (not (equal)
+
+; (element-of-set2 5 '(1 2 3 4 5))
+(def 
+
+
+
+
+ 
+
+
+
+
+
+
+  
